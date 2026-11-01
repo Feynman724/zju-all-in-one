@@ -55,18 +55,18 @@ function createPtaLogin({ BrowserWindow, session, parent, profileDir, verify = (
         finished = true
         abort.abort()
         timers.clearInterval(interval); timers.clearTimeout(timeout)
-        partition.cookies.removeListener('changed', check)
+        partition.cookies.removeListener('changed', cookieChanged)
         active = undefined
         if (!window.isDestroyed()) window.destroy()
         void partition.clearStorageData().catch(() => {})
         settle(result)
       }
-      async function check() {
+      async function check(revalidate = false) {
         if (finished || checking) return
         checking = true
         try {
           const raw = cookieHeader(await partition.cookies.get({ url: 'https://pintia.cn/' }))
-          if (!raw.includes('PTASession=') || raw === last) return
+          if (!raw.includes('PTASession=') || (raw === last && !revalidate)) return
           last = raw
           const result = await verify(raw, { signal: abort.signal })
           if (finished) return
@@ -76,9 +76,10 @@ function createPtaLogin({ BrowserWindow, session, parent, profileDir, verify = (
         } catch { if (!finished) finish({ status: 'error', message: '无法读取登录状态，请重新打开 PTA 登录窗口。' }) }
         finally { checking = false }
       }
-      const interval = timers.setInterval(check, 2000)
+      const cookieChanged = () => { void check() }
+      const interval = timers.setInterval(() => { void check(true) }, 5000)
       const timeout = timers.setTimeout(() => finish({ status: 'error', message: '登录窗口已超时，请重新打开。' }), 15 * 60_000)
-      partition.cookies.on('changed', check)
+      partition.cookies.on('changed', cookieChanged)
       window.webContents.on('did-finish-load', () => { last = ''; void check() })
       for (const event of ['will-navigate', 'will-redirect']) window.webContents.on(event, (event, url) => { if (!ptaUrl(url)) event.preventDefault() })
       window.webContents.setWindowOpenHandler(({ url }) => {

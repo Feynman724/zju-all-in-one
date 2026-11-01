@@ -94,3 +94,15 @@ test('Core verifies imported session with GET only and never persists an account
   assert.deepEqual(requests, Array(2).fill({ url: 'https://passport.pintia.cn/api/u/current', method: 'GET' }))
   assert.deepEqual(client.store.load().jar.toJSON().map(c => c.name), ['PTASession'])
 })
+
+test('an unchanged browser session is rechecked after login completes server-side', async () => {
+  let loggedIn = false, attempts = 0
+  const f = fixture(async () => { attempts++; return { status: loggedIn ? 'saved' : 'pending' } })
+  const result = f.login.open()
+  await f.change(cookie('stable-session'))
+  loggedIn = true
+  for (const callback of f.intervals) callback()
+  await tick()
+  assert.equal(attempts, 2, 'same cookie must be revalidated after the server authenticates it')
+  assert.deepEqual(await result, { status: 'saved' })
+})

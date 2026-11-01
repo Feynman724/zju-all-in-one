@@ -207,7 +207,7 @@ export class HttpClient {
     this.signal = opts.signal;
     this.userAgent = opts.userAgent ?? DEFAULT_UA;
     this.agentFor = opts.agentFor;
-    const agentOpts = { keepAlive: true, maxSockets: opts.maxSockets ?? 4, maxFreeSockets: opts.maxSockets ?? 4, scheduling: opts.scheduling ?? "lifo", timeout: opts.idleTimeoutMs ?? 30000 };
+    const agentOpts = { proxyEnv: process.env, keepAlive: true, maxSockets: opts.maxSockets ?? 4, maxFreeSockets: opts.maxSockets ?? 4, scheduling: opts.scheduling ?? "lifo", timeout: opts.idleTimeoutMs ?? 30000 };
     this.httpAgent = new http.Agent(agentOpts);
     this.httpsAgent = new https.Agent({ ...agentOpts, ...(opts.ca ? { ca: opts.ca } : {}) });
   }
