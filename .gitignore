@@ -19,3 +19,4 @@ build/icon/out/
 
 # 本机存档：重写历史前的完整备份和移出仓库的材料，只留在本机。
 backup/
+.local-tools/

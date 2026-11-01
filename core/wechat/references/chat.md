@@ -73,3 +73,9 @@ node scripts/wechat.mjs chat download --message "read/search 返回的 id" --out
 聊天查询不使用 `--source` 或 `WEREAD_SOURCE`，不依赖 Electron、微信读书或识别模型。数据库密钥只以 DPAPI 密文保存在本机；解密后的密钥、数据库通过内存与匿名管道传递，不生成个人数据库副本，不自动写查询日志。
 
 常见错误为 `wechat_not_running`、`wechat_key_unavailable`、`chat_not_found`、`chat_ambiguous`、`chat_not_group`、`invalid_cursor`、`chat_schema_unsupported`。一个命令内任一所需数据库读取或校验失败会整体报错；不静默把不完整结果当成功返回。
+
+## macOS 源码版
+
+微信 4.x 默认目录通过仓库的 `setup-wechat-mac.command` 首次授权，也可从插件页的「初始化 Mac 微信」打开。密钥在系统钥匙串中，查询仍复用同一套 Query 和消息解析器；不使用第三方微信 CLI。原始数据库只读，不落盘明文。多个本地账号不会自动选择；Mac 暂不提供附件导出。缺失密钥时重新初始化，不尝试以管理员身份运行日常查询。
+
+Mac 快照不按文件修改时间忽略旧分片；缺失的消息库会标为 `partial`，自动监控保留原进度。尚未获得本机授权前只能完成模拟数据库与原生密钥校验测试，不能视为真实账号兼容性验证。

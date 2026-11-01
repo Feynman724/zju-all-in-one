@@ -550,6 +550,19 @@ export function ChatSettings({ platform }: { platform: Platform }) {
   return (
     <>
       {(error || data.error) && <Alert>{error || data.error}</Alert>}
+      {platform === 'wechat' && window.campusShell?.setupWeChatMac && (
+        <section className="campus-section">
+          <div className="campus-section-head">
+            <h2 className="campus-section-title">Mac 微信授权</h2>
+            <Button variant="outline" disabled={busy} onClick={() => {
+              void window.campusShell?.setupWeChatMac?.().then(message => {
+                if (message) setError(message)
+              }, e => setError(errorText(e)))
+            }}>初始化 Mac 微信</Button>
+          </div>
+          <p className="campus-note">首次使用时打开并登录微信，再点击初始化。完成终端中的授权后，点击「立即同步」，然后添加要关注的聊天。</p>
+        </section>
+      )}
       <section className="campus-section">
         <div className="campus-section-head">
           <h2 className="campus-section-title">自动同步</h2>

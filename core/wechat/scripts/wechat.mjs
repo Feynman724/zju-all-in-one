@@ -27,7 +27,11 @@ await main(async () => {
       usage:
         'status | chat list/contacts/info/members/read/search [--chat ID] [--query 关键词] [--since ISO] [--sender ID] [--type 类型] [--limit 1..500] [--cursor 游标] [--offline] | chat download --message ID --out 目录'
     }
-  if (process.platform !== 'win32') fail('unsupported_platform', '微信聊天读取只支持 Windows。')
+  if (process.platform === 'darwin') {
+    const { readMac } = await import('../lib/mac.mjs')
+    return readMac(query)
+  }
+  if (process.platform !== 'win32') fail('unsupported_platform', '微信聊天读取支持 Windows 和 macOS。')
   if (query.op === 'status') {
     const { stdout } = await promisify(execFile)(
       path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/tasklist.exe'),

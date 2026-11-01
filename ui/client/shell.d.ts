@@ -15,6 +15,7 @@ interface CampusUpdateState {
 
 interface Window {
   campusShell?: {
+    setupWeChatMac?: () => Promise<string>
     loginPta: () => Promise<{ status: 'saved' | 'cancelled' | 'error', message?: string }>
     closeToTray: () => Promise<boolean>
     setCloseToTray: (on: boolean) => Promise<boolean>

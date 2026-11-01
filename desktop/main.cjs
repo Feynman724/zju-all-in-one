@@ -208,6 +208,11 @@ async function main() {
   app.on('will-quit', () => { tray.dispose() })
   // 设置页读、改这个开关（preload.cjs 的 campusShell）；只认本窗口主页面发来的。
   const fromPage = event => !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame
+  ipcMain.handle('campus:wechat-mac-setup', async event => {
+    if (!fromPage(event) || process.platform !== 'darwin') return '请从 Mac 应用内打开。'
+    if (app.isPackaged) return 'Mac 微信读取目前在源码开发版提供，请使用开发版完成初始化。'
+    return shell.openPath(path.join(__dirname, '..', 'setup-wechat-mac.command'))
+  })
   const ptaLogin = createPtaLogin({ BrowserWindow, session, parent: window, profileDir: path.join(app.getPath('userData'), 'profile') })
   ipcMain.handle('campus:pta-login', event => {
     if (!fromPage(event)) return { status: 'error', message: '请从应用中打开登录。' }

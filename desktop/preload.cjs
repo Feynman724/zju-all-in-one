@@ -60,6 +60,7 @@ ipcRenderer.on('campus:open', () => { window.dispatchEvent(new Event('campus:ope
 // 存在壳这边的两样设置，页面经这些函数读和改：
 // 「关闭窗口时隐藏到系统托盘」的开关（tray.cjs，ui/client/TrayRow.tsx），和检查更新（update.cjs，ui/client/UpdateRow.tsx）。
 contextBridge.exposeInMainWorld('campusShell', {
+  ...(process.platform === 'darwin' ? { setupWeChatMac: () => ipcRenderer.invoke('campus:wechat-mac-setup') } : {}),
   loginPta: () => ipcRenderer.invoke('campus:pta-login'),
   closeToTray: () => ipcRenderer.invoke('campus:close-to-tray:get'),
   setCloseToTray: on => ipcRenderer.invoke('campus:close-to-tray:set', on === true),
