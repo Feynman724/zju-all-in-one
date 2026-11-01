@@ -43,7 +43,7 @@ macOS（Apple Silicon / Intel）：
 3. 当前 Mac 包没有 Developer ID 签名和公证。首次打开被系统拦截时，在「系统设置 → 隐私与安全性」确认来源后允许打开。
 4. Mac 版暂不启用自动更新，升级时下载并替换应用，用户数据会保留。
 
-macOS 数据目录为 `~/Library/Application Support/CampusAgent`；源码模式使用 `campus-agent` 目录。校园账号仍为明文保存，邮箱密码通过系统安全存储保存。微信/钉钉本机聊天记录读取和配音环境的一键安装目前仍仅支持 Windows；这次移植不包含这些功能。校园服务的实际账号登录和查询需自行配置后验证。
+macOS 数据目录为 `~/Library/Application Support/CampusAgent`；源码模式使用 `CampusAgent-dev` 目录。校园账号仍为明文保存，邮箱密码通过系统安全存储保存。微信/钉钉本机聊天记录读取和配音环境的一键安装目前仍仅支持 Windows；这次移植不包含这些功能。校园服务的实际账号登录和查询需自行配置后验证。
 
 ## 数据和隐私
 
@@ -68,7 +68,15 @@ npm ci
 npm start
 ```
 
-`npm start` 构建界面并打开窗口，也可以双击 `start.cmd`。`npm run verify` 跑类型检查和全部测试，`npm run installer` 打 Windows 安装程序，`npm run installer:mac` 打 Mac DMG / ZIP。必须在目标系统和架构上执行 `npm ci` 后打包（内含平台原生依赖，不支持交叉打包）。各块功能的做法、取舍和验证记录在 [开发记录](docs/DEVELOPMENT.md)。
+`npm start` 构建界面并打开窗口，Mac 可以双击 `start.command`，Windows 可以双击 `start.cmd`。`npm run verify` 跑类型检查和全部测试，`npm run installer` 打 Windows 安装程序，`npm run installer:mac` 打 Mac DMG / ZIP。必须在目标系统和架构上执行 `npm ci` 后打包（内含平台原生依赖，不支持交叉打包）。各块功能的做法、取舍和验证记录在 [开发记录](docs/DEVELOPMENT.md)。
+
+### 日常开发（无需安装包）
+
+首次克隆或依赖变更后执行 `npm ci`；之后运行 `npm start`，Mac 也可双击 `start.command`。Mac 启动脚本使用项目自带的 Node，避免依赖系统 PATH 中的 Node 版本。
+
+启动时会编译界面并打开 Electron，运行期间监听界面文件改动、自动重新编译。修改 `desktop/` 主进程或引擎代码后，退出应用（⌘Q）并重新启动。仅需编译、不打开窗口时运行 `npm run ui`。
+
+源码模式使用 `CampusAgent-dev` 数据目录，可与安装版同时运行；源码模式的模型密钥文件位于项目目录的 `api-keys.local.yaml`（已被 Git 忽略）。日常修改直接在开发窗口验证，只在检查安装、分发或发布时生成 DMG / ZIP。
 
 ### macOS 发布流程
 

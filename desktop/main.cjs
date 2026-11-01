@@ -30,6 +30,8 @@ if (process.platform === 'win32' && !process.env.APPDATA) process.env.APPDATA = 
 
 // A separate app data directory allows a full desktop check without touching the user's sessions.
 const customData = process.env.CAMPUS_AGENT_DATA_DIR || app.commandLine.getSwitchValue('campus-data-dir')
+// Source development must coexist with an installed app and keep its own sessions.
+if (!app.isPackaged && !customData) app.setPath('userData', path.join(app.getPath('appData'), 'CampusAgent-dev'))
 if (customData) {
   if (!path.isAbsolute(customData)) throw new Error('CAMPUS_AGENT_DATA_DIR must be an absolute path')
   app.setPath('userData', customData)
