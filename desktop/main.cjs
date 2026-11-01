@@ -11,6 +11,7 @@ const { createWereadBridge } = require('./weread.cjs')
 const { createReader } = require('./reader.cjs')
 const { handleMailSecret } = require('./mail-secrets.cjs')
 const { ffmpegEnv } = require('./ffmpeg.cjs')
+const { createPtaLogin } = require('./pta-login.cjs')
 const { nodeEnv, nodeExecutable } = require('./node.cjs')
 const { createFilms, filmDirectory } = require('./film.cjs')
 const { execFile, fork } = require('node:child_process')
@@ -205,6 +206,15 @@ async function main() {
   app.on('will-quit', () => { tray.dispose() })
   // 设置页读、改这个开关（preload.cjs 的 campusShell）；只认本窗口主页面发来的。
   const fromPage = event => !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame
+  const ptaLogin = createPtaLogin({ BrowserWindow, session, parent: window, profileDir: path.join(app.getPath('userData'), 'profile') })
+  ipcMain.handle('campus:pta-login', event => {
+    if (!fromPage(event)) return { status: 'error', message: '请从应用中打开登录。' }
+    let accounts
+    try { accounts = JSON.parse(readFileSync(path.join(app.getPath('userData'), 'profile', 'accounts.json'), 'utf8')) } catch {}
+    if (!accounts?.pta_username || !accounts?.pta_password) return { status: 'error', message: '请先在「插件 → 课程与作业」保存 PTA 邮箱和密码，再打开网页登录。' }
+    return ptaLogin.open()
+  })
+  app.on('before-quit', () => { ptaLogin.close() })
   ipcMain.handle('campus:close-to-tray:get', event => fromPage(event) && tray.enabled())
   ipcMain.handle('campus:close-to-tray:set', (event, on) => fromPage(event) ? tray.set(on === true) : false)
   ipcMain.handle('campus:notify:get', event => fromPage(event) && tray.notifying())

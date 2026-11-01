@@ -3734,3 +3734,5 @@ button.campus-chat-open { border: 0; background: transparent; padding: 0; text-a
     display: none;
   }
 }
+
+.campus-pta-login { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

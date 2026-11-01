@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Button, IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { ACCOUNTS, MAX_ACCOUNTS, TRANSPORT, accountIndexes, numberedKeys, type AccountId } from '../profile/catalog.mjs'
 import { errorText, profileApi, type AccountSnapshot } from './api.ts'
+import { PtaLogin } from './PtaLogin.tsx'
 import { Choice, Field } from './controls.tsx'
 
 function Eye({ open }: { open: boolean }) {
@@ -108,6 +109,11 @@ export function AccountForm({ accounts, onSaved }: { accounts: readonly AccountI
                       <SecretInput id={`${heading}-secret`} name={`${name}${secret.label}`} value={value(keys.secret)} disabled={busy} onChange={(next) => { edit(keys.secret, next) }} />
                     </Field>
                   </div>
+                  {id === 'pta' && <PtaLogin disabled={busy} beforeOpen={async () => {
+                    if (!dirty) return
+                    const next = await profileApi<AccountSnapshot>('account-save', { revision: data.revision, values: edits })
+                    show(next); setSaved(true); onSaved(next)
+                  }} />}
                   {id === 'webvpn' && (
                     <Field label={TRANSPORT.label}>
                       <Choice label={TRANSPORT.label} value={value(TRANSPORT.key) || TRANSPORT.options[0]!.value} disabled={busy}

@@ -13,6 +13,7 @@ import {
 import { CAMPUS_PLUGINS } from '../profile/catalog.mjs'
 import { errorText, profileApi } from './api.ts'
 import { Alert, Choice, Crumb } from './controls.tsx'
+import { PtaLogin } from './PtaLogin.tsx'
 import { FeedColumn, useFeedBusy, visitFeed } from './Feed.tsx'
 import { Flow } from './Flow.tsx'
 import { HandIconButton, handToAssistant } from './handoff.tsx'
@@ -371,9 +372,10 @@ export function AffairsPage() {
                 {/* 冒号后面的原因是系统给的原话，不动它。 */}
                 <span>
                   {mixed(source.fetchedAt ? `${source.name}这次没读到，它的作业还是${agoText(Date.parse(source.fetchedAt), now)}读到的：` : `${source.name}没读到：`)}
-                  {source.error!.replace(/[。.]$/, '')}。
+                  {source.id === 'pta' && /认证|验证码|二次验证|Cookie/.test(source.error ?? '') ? '请点击「登录 PTA」，在官网窗口中完成登录验证。' : `${source.error!.replace(/[。.]$/, '')}。`}
                 </span>
-                <button type="button" className="campus-textlink" onClick={() => { void visit(true) }}>再试一次</button>
+                {source.id === 'pta' && /认证|验证码|二次验证|Cookie/.test(source.error ?? '') ? <PtaLogin onSaved={() => { void visit(true) }} />
+                  : <button type="button" className="campus-textlink" onClick={() => { void visit(true) }}>再试一次</button>}
               </p>
             ))}
           </section>

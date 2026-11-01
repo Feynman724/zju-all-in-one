@@ -15,6 +15,7 @@ interface CampusUpdateState {
 
 interface Window {
   campusShell?: {
+    loginPta: () => Promise<{ status: 'saved' | 'cancelled' | 'error', message?: string }>
     closeToTray: () => Promise<boolean>
     setCloseToTray: (on: boolean) => Promise<boolean>
     /** 新消息时弹不弹 Windows 的系统通知。 */
