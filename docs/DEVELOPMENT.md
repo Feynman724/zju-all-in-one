@@ -926,3 +926,12 @@ npm run test:profile
 - 首次授权入口为 setup-wechat-mac.command，源码版插件页可打开。Mac 4.x 默认目录，多个本地账号不猜选；缺失分片明确标为 partial，监控不推进进度。附件导出暂不支持。原生辅助程序编译到忽略目录 .local-tools，不包含在现有安装包中。
 - 验证：四项类型检查、运行依赖检查、新增 Mac 原生/快照/查询测试、PTA 与代理回归测试及初始化按钮交互测试通过；源码开发版启动成功。完整 Node 测试 500 项：488 通过、11 跳过、1 项既有失败（flow-notes.test.mjs 的同毫秒新增记录排序）。该失败单独重跑仍出现，相关源码和测试本次未改。TTS reader 检查单独补跑通过。
 - 尚未验证：需要用户在本机终端授权后的真实微信数据库读取。进程访问被 macOS 拒绝时按提示开启 Terminal 开发者工具权限，不修改微信签名或关闭 SIP。模拟测试不能视为真实账号兼容性验证。
+
+
+### Mac 微信实机验证更正
+
+实机微信 4.1.7 的签名含 Hardened Runtime，entitlements 不含 get-task-allow，SIP 开启。用户从 Terminal 执行初始化后 task_for_pid 返回拒绝，联系人和会话数据库无可用缓存密钥。此前“授权后可读”的假设未成立，不能将该适配称为已可用。
+
+修复初始化入口停在第一步等待回车的问题，直接进入检查。新增正在运行的微信签名预检：受保护且不允许调试的进程在 sudo 授权前明确拒绝，插件也显示兼容性原因，不再要求重复初始化。原数据库解密和解析测试仍通过，但本机官方微信的自动读取功能仍受阻。未修改微信签名或系统保护。
+
+依据：Apple Debugging tool entitlement 文档说明，即使读取工具具备调试 entitlement，也不能取得被 SIP 保护且未开启 get-task-allow 的进程端口：https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.cs.debugger

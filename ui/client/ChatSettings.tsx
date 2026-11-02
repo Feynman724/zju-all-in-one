@@ -560,7 +560,7 @@ export function ChatSettings({ platform }: { platform: Platform }) {
               }, e => setError(errorText(e)))
             }}>初始化 Mac 微信</Button>
           </div>
-          <p className="campus-note">首次使用时打开并登录微信，再点击初始化。完成终端中的授权后，点击「立即同步」，然后添加要关注的聊天。</p>
+          <p className="campus-note">先登录电脑版微信，再点击初始化。在终端 Password: 提示处输入 Mac 开机密码并按回车（输入不显示字符）。完成后点击「立即同步」，再添加聊天。</p>
         </section>
       )}
       <section className="campus-section">

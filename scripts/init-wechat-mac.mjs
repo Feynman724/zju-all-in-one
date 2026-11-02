@@ -1,7 +1,7 @@
 // The privileged child only scans memory. Keychain writes run as the logged-in user.
 import { spawn, execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { macProfile, databasePaths, firstPage, keyAccount, cachedKey, macHelper, wechatPid } from '../core/wechat/lib/mac.mjs'
+import { macProfile, databasePaths, firstPage, keyAccount, cachedKey, macHelper, wechatPid, requireReadableWeChat } from '../core/wechat/lib/mac.mjs'
 import { verifyKey } from '../core/wechat/lib/snapshot.mjs'
 
 async function storeKey(account, key) {
@@ -26,6 +26,8 @@ try {
     page.fill(0)
   }
   if (pending.length) {
+    // Reject a protected release build before asking for a password that cannot fix it.
+    await requireReadableWeChat(async () => pid)
     // Obtain sudo authorization before stdout becomes a binary-only pipe.
     await new Promise((resolve, reject) => {
       const auth = spawn('/usr/bin/sudo', ['-v'], { stdio: 'inherit' })
@@ -41,7 +43,7 @@ try {
     } catch (error) {
       // Native helper stderr contains only fixed diagnostics, never process bytes or keys.
       error.stdout?.fill?.(0)
-      if (error.code === 3) throw Error('macOS 拒绝读取微信进程。请到系统设置 → 隐私与安全性 → 开发者工具中允许 Terminal，再重试。无需关闭 SIP 或修改微信签名。')
+      if (error.code === 3) throw Error('macOS 拒绝读取微信进程，本次未取得密钥。可能涉及开发者工具权限或微信进程保护；不要反复提交管理员密码。')
       throw Error('未取得可验证的数据库密钥。请在微信中打开目标聊天后重试；当前微信版本也可能不兼容。')
     }
     try {

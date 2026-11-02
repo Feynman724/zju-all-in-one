@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { createCipheriv, createHmac, pbkdf2Sync } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { decryptSnapshot, verifyKey, readSnapshot } from '../lib/snapshot.mjs'
-import { readMac, macProfile } from '../lib/mac.mjs'
+import { readMac, macProfile, protectedWeChat, requireReadableWeChat } from '../lib/mac.mjs'
 
 const key = Buffer.alloc(32, 7), salt = Buffer.alloc(16, 9), iv = Buffer.alloc(16, 11)
 function encrypted(text, number = 1) {
@@ -83,7 +83,7 @@ test('Mac uses the existing Query parser, reports missing keys, and rejects acco
     CREATE TABLE SessionTable(username TEXT,last_timestamp INTEGER,unread_count INTEGER,summary TEXT,is_hidden INTEGER,last_msg_sender TEXT);
     INSERT INTO SessionTable VALUES('g@chatroom',1792116000,1,'通知',0,'u');
     CREATE TABLE Name2Id(user_name TEXT);`)
-  const options = { root, helper: path.join(storage, 'contact/contact.db'), loadKey: async () => Buffer.from(key), snapshot: () => db.serialize(), pid: async () => 123 }
+  const options = { root, helper: path.join(storage, 'contact/contact.db'), loadKey: async () => Buffer.from(key), snapshot: () => db.serialize(), pid: async () => 123, checkAccess: async () => {} }
   assert.equal((await readMac({ op: 'list', limit: 50 }, options)).chats[0].name, '课程群')
   assert.equal((await readMac({ op: 'status' }, options)).running, true)
   assert.equal((await readMac({ op: 'status' }, { ...options, pid: async () => 0 })).running, false)
@@ -112,4 +112,20 @@ test('native Mac helper verifies the same SQLCipher page and codec layout as the
     }`)
   execFileSync('xcrun', ['clang++', '-std=c++17', '-Wno-deprecated-declarations', driver, '-framework', 'Security', '-framework', 'CoreFoundation', '-o', binary], { stdio: 'pipe' })
   execFileSync(binary, [], { input: Buffer.concat([key, encrypted('fixture')]), stdio: ['pipe', 'pipe', 'pipe'] })
+})
+
+test('protected official WeChat is identified before password authorization', async () => {
+  const flags = 'CodeDirectory v=20500 flags=0x10000(runtime) hashes=35525+7'
+  const plist = '<plist><dict><key>com.apple.security.app-sandbox</key><true/></dict></plist>'
+  assert.equal(protectedWeChat(flags, plist), true)
+  assert.equal(protectedWeChat(flags, '<key>com.apple.security.get-task-allow</key><false/>'), true)
+  assert.equal(protectedWeChat(flags, '<key>com.apple.security.get-task-allow</key>\n<true/>'), false)
+  assert.equal(protectedWeChat('flags=0x2(adhoc)', plist), false)
+  const calls = []
+  await assert.rejects(requireReadableWeChat(async () => 123, async (command, args) => {
+    calls.push(command)
+    if (command === '/bin/ps') return { stdout: '/Applications/WeChat.app/Contents/MacOS/WeChat\n' }
+    return args.includes('--entitlements') ? { stdout: plist } : { stderr: flags }
+  }), e => e.status === 'wechat_process_protected')
+  assert.deepEqual(calls, ['/bin/ps', '/usr/bin/codesign', '/usr/bin/codesign'])
 })

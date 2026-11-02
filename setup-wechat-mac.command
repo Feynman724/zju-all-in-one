@@ -184,7 +184,7 @@ finish() {
 # Replace the example below. Set TOTAL_STAGES to match the stages you write.
 # ──────────────────────────────────────────────────────────────────────────
 
-TOTAL_STAGES=2
+TOTAL_STAGES=1
 campus_repo="$(cd "$(dirname "$0")" && pwd)"
 cd "$campus_repo"
 case "$(uname -m)" in
@@ -194,20 +194,12 @@ case "$(uname -m)" in
 esac
 [[ -x "$campus_node" ]] || { say "请先在项目中运行 npm ci。"; pause; exit 1; }
 
-banner "校园智能体 · Mac 微信初始化"
-stage "打开电脑版微信"
-say "本入口使用仓库自己的数据库逆向读取器，只读取本机微信。"
-say "密钥存入 macOS 钥匙串；数据库仅在内存解密。"
-open -a WeChat
-step "请登录微信，并打开你想关注的聊天。"
-pause "准备好后按回车继续"
-
-stage "授权本机读取"
-say "接下来编译仓库中的 Mac 读取器，并请求管理员授权读取微信进程。"
-say "密码由系统 sudo 读取，输入时不会显示；不要把密码发到聊天里。"
-say "若系统询问钥匙串访问，请允许此读取器访问。"
-confirm "开始初始化" || exit 0
+stage "初始化 Mac 微信"
+say "正在检查微信。接下来出现 Password: 时，请输入 Mac 开机密码并按回车。"
+say "输入密码时不显示字符，这是正常的；无需在这里输入 y 或先按回车。"
+say "密钥保存在系统钥匙串，数据库仅在内存解密。"
 if [[ ! -x .local-tools/wechat-mac-key || core/wechat/scripts/local/mac-key.cpp -nt .local-tools/wechat-mac-key ]]; then
+  say "正在编译 Mac 读取器…"
   if ! bash scripts/build-wechat-mac.sh; then
     say "编译失败，请先安装 Xcode 命令行工具。"
     pause; exit 1
@@ -215,8 +207,7 @@ if [[ ! -x .local-tools/wechat-mac-key || core/wechat/scripts/local/mac-key.cpp 
 fi
 if ! "$campus_node" scripts/init-wechat-mac.mjs; then
   say "初始化未完成，上方是具体原因。可处理后再次双击运行。"
-  pause; exit 1
+  pause "按回车关闭此窗口"; exit 1
 fi
-finish
-say "回到校园智能体 → 插件 → 微信聊天，点击立即同步，再添加要关注的聊天。"
+say "初始化已结束。回到校园智能体 → 插件 → 微信聊天，点击立即同步。"
 pause "按回车关闭此窗口"

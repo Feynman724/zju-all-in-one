@@ -63,8 +63,29 @@ export async function wechatPid() {
     return 0
   }
 }
+export function protectedWeChat(details, entitlements) {
+  const hardened = /flags=0x[0-9a-f]+\([^)]*\bruntime\b/i.test(details)
+  const allowsDebugging = /<key>com\.apple\.security\.get-task-allow<\/key>\s*<true\s*\/>/.test(entitlements)
+  return hardened && !allowsDebugging
+}
+export async function requireReadableWeChat(pid = wechatPid, run = exec) {
+  const processId = await pid()
+  if (!processId) fail('wechat_not_running', '请先打开并登录电脑版微信。')
+  const { stdout } = await run('/bin/ps', ['-p', String(processId), '-o', 'comm='], { encoding: 'utf8', timeout: 3000 })
+  const executable = stdout.trim()
+  if (!path.isAbsolute(executable) || !executable.endsWith('/WeChat.app/Contents/MacOS/WeChat'))
+    fail('wechat_process_unknown', '无法确认当前微信进程，请退出多余的微信实例后重试。')
+  let details, entitlements
+  try {
+    details = await run('/usr/bin/codesign', ['-dv', executable], { encoding: 'utf8', timeout: 5000 })
+    entitlements = await run('/usr/bin/codesign', ['-d', '--entitlements', ':-', executable], { encoding: 'utf8', timeout: 5000 })
+  } catch { fail('wechat_signature_unknown', '无法检查微信的进程访问限制，本次未开始授权。') }
+  if (protectedWeChat(details.stderr, entitlements.stdout))
+    fail('wechat_process_protected', '当前微信启用了进程保护，未允许外部读取内存；现有 Mac 读取器无法取得数据库密钥。重复初始化或输入管理员密码无法解除此限制，暂不能同步聊天。')
+}
 export async function readMac(query, {
-  root = macDataRoot, helper = macHelper, loadKey = cachedKey, snapshot = readSnapshot, pid = wechatPid
+  root = macDataRoot, helper = macHelper, loadKey = cachedKey, snapshot = readSnapshot, pid = wechatPid,
+  checkAccess = requireReadableWeChat
 } = {}) {
   if (!fs.existsSync(helper)) fail('wechat_mac_setup_required', '请在微信聊天插件页点击「初始化 Mac 微信」，完成首次授权。')
   if (query.op === 'download') fail('unsupported_operation', 'Mac 版暂不支持导出微信附件；请在微信中保存附件。')
@@ -82,6 +103,7 @@ export async function readMac(query, {
       key = await loadKey(file, page)
       if (!key) {
         if (/^message_\d+\.db$/.test(path.basename(file))) { skipped++; continue }
+        await checkAccess(pid)
         fail('wechat_mac_setup_required', 'Mac 微信尚未授权或密钥已失效，请在微信聊天插件页点击「初始化 Mac 微信」。')
       }
       if (query.op === 'status') continue
